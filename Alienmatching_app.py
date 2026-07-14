@@ -1,6 +1,4 @@
-import streamlit as nn
 import streamlit as st
-import random
 
 # 페이지 기본 설정
 st.set_page_config(
@@ -49,13 +47,9 @@ if st.button("💖 운명의 외계인 매칭하기"):
         st.balloons()
         
         # 성향 분석 로직을 간단한 MBTI 매핑으로 변환
-        # E/I (외향/내향)
         ei = "I" if "안드로메다" in q1 else "E"
-        # N/S (직관/감각 - 여기서는 텔레파시/워프로 대변)
         ns = "N" if "텔레파시" in q2 else "S"
-        # T/F (사고/감정)
         tf = "T" if "매뉴얼" in q3 else "F"
-        # J/P (판단/인식)
         jp = "J" if "분 단위" in q4 else "P"
         
         mbti_result = f"{ei}{ns}{tf}{jp}"
@@ -63,4 +57,55 @@ if st.button("💖 운명의 외계인 매칭하기"):
         # 외계인 캐릭터 데이터베이스
         alien_database = {
             "INTJ": {
-                "name": "젤다르-9 (Zeldar-
+                "name": "젤다르-9 (Zeldar-9)",
+                "origin": "차가운 금속 행성 케플러-186f",
+                "mbti": "INTJ (전략가형 외계인)",
+                "desc": "고도의 지능을 가졌으며 늘 우주의 진리를 탐구합니다. 감정 표현은 서툴지만 당신을 위해 소형 인공위성을 직접 조립해 선물해 줄 로맨티스트입니다.",
+                "quote": '💬 "당신이라는 변수는 내 완벽한 은하 계산식에서 유일한 예외입니다."'
+            },
+            "ENFP": {
+                "name": "포포 (Popo)",
+                "origin": "무지개 가스로 가득 찬 핑크빛 행성",
+                "mbti": "ENFP (스파크형 외계인)",
+                "desc": "온몸이 말랑말랑한 젤리로 되어 있고, 기분이 좋으면 몸에서 빛이 납니다. 당신과 함께라면 은하 끝까지 모험을 떠날 준비가 되어 있습니다.",
+                "quote": '💬 "꺄! 너랑 같이 있으면 내 몸에서 초신성이 폭발하는 것 같아! 당장 우주선 타고 은하수 드라이브 가자!"'
+            },
+            "INFJ": {
+                "name": "시리우스의 예언자 (Sirian)",
+                "origin": "깊고 푸른 시리우스 B 해저 도시",
+                "mbti": "INFJ (옹호자형 외계인)",
+                "desc": "말하지 않아도 눈빛만으로 당신의 모든 슬픔과 기쁨을 알아챕니다. 깊은 밤, 당신의 영혼을 따뜻하게 안아줄 수 있는 신비로운 존재입니다.",
+                "quote": '💬 "천 년 전부터 당신의 주파수가 나를 향해 흐르고 있다는 걸 알고 있었습니다. 마침내 닿았네요."'
+            },
+            "ESTP": {
+                "name": "락스 (Rax)",
+                "origin": "소행성 지대의 우주 해적선",
+                "mbti": "ESTP (활동가형 외계인)",
+                "desc": "스릴을 즐기는 우주 바이크 폭주족입니다. 규칙 따위는 가볍게 무시하며, 당신에게 우주에서 가장 짜릿한 일몰을 보여주겠다고 호언장담합니다.",
+                "quote": '💬 "꽉 잡아, 지구인! 블랙홀 스윙바이를 보여줄 테니까. 날 믿지?"'
+            },
+            "DEFAULT": {
+                "name": "글룹 (Gloop)",
+                "origin": "미지의 다차원 우주",
+                "mbti": "모든 은하를 사랑하는 평화주의자",
+                "desc": "모습이 계속 변하는 액체 생명체입니다. 당신이 원하는 성격과 모습으로 언제든 변신할 수 있는 다재다능한 파트너입니다.",
+                "quote": '💬 "보글보글... 당신이 좋아하는 모습으로 날 채워주세요!"'
+            }
+        }
+        
+        # 매칭되는 외계인 가져오기 (매핑이 없으면 DEFAULT 사용)
+        match = alien_database.get(mbti_result, alien_database["DEFAULT"])
+        
+        # 결과 화면 출력
+        st.success(f"🎉 {name}님의 우주적 운명의 짝을 찾았습니다!")
+        
+        st.markdown(f"## 👽 **{match['name']}**")
+        st.markdown(f"**🪐 고향:** {match['origin']}")
+        st.markdown(f"**🧬 MBTI:** `{match['mbti']}`")
+        st.write(match['desc'])
+        
+        # 외계인의 한마디
+        st.info(match['quote'])
+
+st.markdown("---")
+st.caption("제작: 은하계 중매 연구소 🛸")
