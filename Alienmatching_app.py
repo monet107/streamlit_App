@@ -1,4 +1,5 @@
 import streamlit as st
+import math
 import random
 
 st.set_page_config(
@@ -7,182 +8,234 @@ st.set_page_config(
     layout="centered"
 )
 
-st.title("👽 외계인 사랑 매칭")
-st.subheader("당신과 가장 잘 맞는 외계인을 찾아드립니다 ❤️")
+st.title("👽 Alien Love Match")
+st.subheader("당신과 가장 잘 맞는 외계인을 찾아드립니다 💕")
 
-# -------------------------
+st.write("각 항목을 선택하면 당신의 성향을 분석하여 가장 잘 맞는 외계인을 추천합니다.")
+
+# -------------------------------------------------
 # 외계인 데이터
-# -------------------------
+# -------------------------------------------------
 
 aliens = [
     {
         "name": "조그(Zorg)",
-        "planet": "안드로메다 X-13",
         "emoji": "👾",
-        "likes": {
-            "personality": "외향적",
-            "hobby": "여행",
-            "date": "모험",
-            "adventure": "매우 높음"
+        "planet": "안드로메다 X-13",
+        "description": "우주 바이크를 타고 은하계를 여행하는 자유로운 영혼.",
+        "traits": {
+            "activity": 95,
+            "romance": 60,
+            "humor": 80,
+            "logic": 30,
+            "adventure": 95,
         },
-        "description": "우주 오토바이를 타고 은하계를 여행하는 낭만파."
     },
     {
         "name": "루나(Luna-9)",
-        "planet": "달의 뒷면",
         "emoji": "🌙",
-        "likes": {
-            "personality": "차분함",
-            "hobby": "독서",
-            "date": "카페",
-            "adventure": "낮음"
+        "planet": "달의 뒷면",
+        "description": "별을 바라보며 시를 쓰는 감성 외계인.",
+        "traits": {
+            "activity": 30,
+            "romance": 95,
+            "humor": 45,
+            "logic": 55,
+            "adventure": 25,
         },
-        "description": "별빛 아래에서 책 읽는 것을 좋아하는 감성 외계인."
-    },
-    {
-        "name": "블립(Blip)",
-        "planet": "젤리성운",
-        "emoji": "🪼",
-        "likes": {
-            "personality": "유쾌함",
-            "hobby": "게임",
-            "date": "놀이공원",
-            "adventure": "보통"
-        },
-        "description": "항상 웃으며 젤리비를 뿌리고 다닌다."
-    },
-    {
-        "name": "네뷸라(Nebula)",
-        "planet": "오리온",
-        "emoji": "✨",
-        "likes": {
-            "personality": "감성적",
-            "hobby": "음악",
-            "date": "산책",
-            "adventure": "보통"
-        },
-        "description": "별의 노래를 연주하는 우주의 싱어송라이터."
     },
     {
         "name": "맥스론(Maxron)",
-        "planet": "기계행성 MX",
         "emoji": "🤖",
-        "likes": {
-            "personality": "논리적",
-            "hobby": "코딩",
-            "date": "영화",
-            "adventure": "높음"
+        "planet": "기계행성 MX",
+        "description": "사랑도 알고리즘이라고 믿는 천재 AI.",
+        "traits": {
+            "activity": 55,
+            "romance": 35,
+            "humor": 50,
+            "logic": 98,
+            "adventure": 60,
         },
-        "description": "사랑도 알고리즘이라고 믿는 AI 외계인."
-    }
+    },
+    {
+        "name": "블립(Blip)",
+        "emoji": "🪼",
+        "planet": "젤리성운",
+        "description": "항상 웃고 노는 우주의 분위기 메이커.",
+        "traits": {
+            "activity": 80,
+            "romance": 70,
+            "humor": 98,
+            "logic": 30,
+            "adventure": 70,
+        },
+    },
+    {
+        "name": "네뷸라(Nebula)",
+        "emoji": "✨",
+        "planet": "오리온 성운",
+        "description": "별빛을 연주하는 신비로운 음악가.",
+        "traits": {
+            "activity": 60,
+            "romance": 92,
+            "humor": 60,
+            "logic": 65,
+            "adventure": 55,
+        },
+    },
+    {
+        "name": "크로노(Chrono)",
+        "emoji": "⏳",
+        "planet": "시간 행성",
+        "description": "시간을 여행하며 완벽한 데이트를 계획한다.",
+        "traits": {
+            "activity": 50,
+            "romance": 80,
+            "humor": 55,
+            "logic": 88,
+            "adventure": 40,
+        },
+    },
 ]
 
-# -------------------------
-# 입력
-# -------------------------
+# -------------------------------------------------
+# 설문
+# -------------------------------------------------
 
 name = st.text_input("이름")
 
-personality = st.selectbox(
-    "성격",
-    ["외향적", "차분함", "유쾌함", "감성적", "논리적"]
+activity = st.slider(
+    "🏃 활동적인 것을 얼마나 좋아하나요?",
+    0,
+    100,
+    50,
 )
 
-hobby = st.selectbox(
-    "취미",
-    ["여행", "독서", "게임", "음악", "코딩"]
+romance = st.slider(
+    "💕 로맨틱한 분위기를 얼마나 좋아하나요?",
+    0,
+    100,
+    50,
 )
 
-date = st.selectbox(
-    "데이트 스타일",
-    ["카페", "산책", "영화", "놀이공원", "모험"]
+humor = st.slider(
+    "😂 유머감각이 얼마나 중요하다고 생각하나요?",
+    0,
+    100,
+    50,
 )
 
-adventure = st.select_slider(
-    "모험심",
-    options=["낮음", "보통", "높음", "매우 높음"]
+logic = st.slider(
+    "🧠 논리적인 사람을 얼마나 선호하나요?",
+    0,
+    100,
+    50,
 )
 
-# -------------------------
-# 매칭 함수
-# -------------------------
+adventure = st.slider(
+    "🚀 모험심은 어느 정도인가요?",
+    0,
+    100,
+    50,
+)
 
-def score(alien):
-    s = 0
+# -------------------------------------------------
+# 궁합 계산
+# -------------------------------------------------
 
-    if personality == alien["likes"]["personality"]:
-        s += 30
+def compatibility(user, alien):
 
-    if hobby == alien["likes"]["hobby"]:
-        s += 25
+    distance = math.sqrt(
+        (user["activity"] - alien["activity"]) ** 2
+        + (user["romance"] - alien["romance"]) ** 2
+        + (user["humor"] - alien["humor"]) ** 2
+        + (user["logic"] - alien["logic"]) ** 2
+        + (user["adventure"] - alien["adventure"]) ** 2
+    )
 
-    if date == alien["likes"]["date"]:
-        s += 25
+    max_distance = math.sqrt(5 * (100 ** 2))
 
-    if adventure == alien["likes"]["adventure"]:
-        s += 20
+    score = (1 - distance / max_distance) * 100
 
-    s += random.randint(0, 10)
+    score += random.uniform(-2, 2)
 
-    return min(s, 100)
+    return round(max(0, min(score, 100)), 1)
 
 
-# -------------------------
+# -------------------------------------------------
 # 결과
-# -------------------------
+# -------------------------------------------------
 
-if st.button("🛸 내 운명의 외계인 찾기"):
+if st.button("🛸 운명의 외계인 찾기"):
 
-    scores = []
+    user = {
+        "activity": activity,
+        "romance": romance,
+        "humor": humor,
+        "logic": logic,
+        "adventure": adventure,
+    }
+
+    ranking = []
 
     for alien in aliens:
-        scores.append((score(alien), alien))
 
-    scores.sort(reverse=True, key=lambda x: x[0])
+        score = compatibility(user, alien["traits"])
 
-    match_score, best = scores[0]
+        ranking.append((score, alien))
+
+    ranking.sort(reverse=True, key=lambda x: x[0])
+
+    best_score, best = ranking[0]
 
     st.balloons()
 
-    st.markdown("---")
+    st.divider()
 
-    st.markdown(f"# {best['emoji']} {best['name']}")
+    st.header(f"{best['emoji']} {best['name']}")
 
-    st.write(f"### 🌍 출신 행성 : {best['planet']}")
+    st.write(f"🌍 **출신 행성:** {best['planet']}")
 
-    st.progress(match_score / 100)
+    st.progress(best_score / 100)
 
-    st.metric("❤️ 사랑 매칭률", f"{match_score}%")
+    st.metric("❤️ 궁합", f"{best_score}%")
 
     st.write(best["description"])
 
+    st.subheader("💘 왜 잘 맞을까요?")
+
     reasons = []
 
-    if personality == best["likes"]["personality"]:
-        reasons.append("성격이 잘 맞아요.")
+    for key, title in [
+        ("activity", "활동성"),
+        ("romance", "로맨틱 성향"),
+        ("humor", "유머감각"),
+        ("logic", "논리성"),
+        ("adventure", "모험심"),
+    ]:
 
-    if hobby == best["likes"]["hobby"]:
-        reasons.append("취미가 같아요.")
+        diff = abs(user[key] - best["traits"][key])
 
-    if date == best["likes"]["date"]:
-        reasons.append("데이트 취향이 비슷해요.")
+        if diff <= 10:
+            reasons.append(f"✅ {title}이 거의 완벽하게 일치합니다.")
 
-    if adventure == best["likes"]["adventure"]:
-        reasons.append("모험심이 비슷해요.")
+        elif diff <= 25:
+            reasons.append(f"💚 {title}이 상당히 비슷합니다.")
 
     if len(reasons) == 0:
-        reasons.append("반대 성향이라 서로에게 끌리는 커플이에요!")
-
-    st.subheader("✨ 추천 이유")
+        reasons.append("✨ 서로 다른 성향이라 오히려 서로에게 끌릴 가능성이 큽니다.")
 
     for r in reasons:
-        st.write("✅", r)
+        st.write(r)
 
-    st.success(f"{name}님은 **{best['name']}** 과(와) 우주 최고의 커플이 될 가능성이 높습니다! 💕")
+    st.success(f"{name}님과 가장 잘 맞는 외계인은 **{best['name']}** 입니다!")
 
-    st.markdown("---")
+    st.divider()
 
-    st.subheader("🏆 매칭 순위")
+    st.subheader("🏆 궁합 순위")
 
-    for s, alien in scores:
-        st.write(f"{alien['emoji']} **{alien['name']}** — {s}%")
+    for score, alien in ranking:
+
+        st.write(
+            f"{alien['emoji']} **{alien['name']}**  |  ❤️ {score}%"
+        )
