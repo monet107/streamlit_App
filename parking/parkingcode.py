@@ -1,6 +1,9 @@
 import streamlit as st
 import pandas as pd
 
+# ------------------------
+# 페이지 설정
+# ------------------------
 st.set_page_config(
     page_title="서울 공영주차장 정보",
     page_icon="🅿️",
@@ -8,25 +11,30 @@ st.set_page_config(
 )
 
 st.title("🅿️ 서울 공영주차장 정보 조회")
-st.write("CSV 파일을 업로드하면 지역별 주차장 정보를 조회할 수 있습니다.")
+st.markdown("서울시 공영주차장 정보를 검색하고 요금을 확인할 수 있습니다.")
 
+# ------------------------
+# CSV 업로드
+# ------------------------
 uploaded_file = st.file_uploader(
-    "CSV 파일 업로드",
-    type=["csv"]
+    "📂 서울시 공영주차장 안내 정보.csv 업로드",
+    type="csv"
 )
 
-if uploaded_file:
+if uploaded_file is not None:
 
-    # CSV 읽기
-    try:
-        df = pd.read_csv(uploaded_file, encoding="utf-8")
-    except:
-        df = pd.read_csv(uploaded_file, encoding="cp949")
+    # CP949 인코딩
+    df = pd.read_csv(uploaded_file, encoding="cp949")
 
-    st.success(f"{len(df)}개의 주차장 정보를 불러왔습니다.")
+    st.success(f"총 {len(df)}개의 주차장 정보를 불러왔습니다.")
 
-    # 검색창
-    keyword = st.text_input("🔍 주차장명 또는 주소 검색")
+    # ------------------------
+    # 검색
+    # ------------------------
+
+    keyword = st.text_input(
+        "🔍 주차장명 또는 주소 검색"
+    )
 
     if keyword:
         result = df[
@@ -37,45 +45,76 @@ if uploaded_file:
     else:
         result = df
 
-    st.subheader("검색 결과")
+    st.write(f"검색 결과 : **{len(result)}개**")
 
-    if len(result) == 0:
-        st.warning("검색 결과가 없습니다.")
-    else:
-        for _, row in result.iterrows():
+    # ------------------------
+    # 카드 형태 출력
+    # ------------------------
 
-            with st.expander(f"🅿️ {row['주차장명']}"):
+    for _, row in result.iterrows():
 
-                col1, col2 = st.columns(2)
+        with st.expander(f"🅿️ {row['주차장명']}"):
 
-                with col1:
-                    st.write("**주소**")
-                    st.write(row["주소"])
+            left, right = st.columns(2)
 
-                    if "전화번호" in df.columns:
-                        st.write("**전화번호**")
-                        st.write(row["전화번호"])
+            with left:
 
-                    if "운영시간" in df.columns:
-                        st.write("**운영시간**")
-                        st.write(row["운영시간"])
+                st.markdown("### 📍 기본정보")
 
-                with col2:
-                    if "기본주차요금" in df.columns:
-                        st.write("**기본요금**")
-                        st.write(row["기본주차요금"])
+                st.write("**주소**")
+                st.write(row["주소"])
 
-                    if "추가단위요금" in df.columns:
-                        st.write("**추가요금**")
-                        st.write(row["추가단위요금"])
+                st.write("**전화번호**")
+                st.write(row["전화번호"])
 
-                    if "일최대요금" in df.columns:
-                        st.write("**1일 최대요금**")
-                        st.write(row["일최대요금"])
+                st.write("**주차장 종류**")
+                st.write(row["주차장 종류"])
+
+                st.write("**총 주차면수**")
+                st.write(f"{row['총 주차면']}면")
+
+            with right:
+
+                st.markdown("### 💰 요금정보")
+
+                st.write("**기본 주차 요금**")
+                st.write(row["기본 주차 요금"])
+
+                st.write("**추가 단위 요금**")
+                st.write(row["추가 단위 요금"])
+
+                st.write("**1일 최대 요금**")
+                st.write(row["일 최대 요금"])
+
+                st.write("**월 정기권 요금**")
+                st.write(row["월 정기권 요금"])
+
+            st.divider()
+
+            st.markdown("### 🕒 운영시간")
+
+            st.write(
+                f"평일 : {row['평일 운영 시작시각(HHMM)']} ~ {row['평일 운영 종료시각(HHMM)']}"
+            )
+
+            st.write(
+                f"토요일 : {row['토요일 운영 시작시각(HHMM)']} ~ {row['토요일 운영 종료시각(HHMM)']}"
+            )
+
+            st.write(
+                f"공휴일 : {row['공휴일 운영 시작시각(HHMM)']} ~ {row['공휴일 운영 종료시각(HHMM)']}"
+            )
+
+    st.divider()
 
     st.subheader("📋 전체 데이터")
-    st.dataframe(result, use_container_width=True)
+
+    st.dataframe(
+        result,
+        use_container_width=True,
+        hide_index=True
+    )
 
 else:
+
     st.info("왼쪽에서 CSV 파일을 업로드해주세요.")
-    st.info("왼쪽의 'Browse files' 버튼을 눌러 CSV를 업로드하세요.")
