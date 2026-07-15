@@ -1,9 +1,6 @@
 import streamlit as st
 import pandas as pd
 
-# ------------------------
-# 페이지 설정
-# ------------------------
 st.set_page_config(
     page_title="서울 공영주차장 정보",
     page_icon="🅿️",
@@ -11,30 +8,20 @@ st.set_page_config(
 )
 
 st.title("🅿️ 서울 공영주차장 정보 조회")
-st.markdown("서울시 공영주차장 정보를 검색하고 요금을 확인할 수 있습니다.")
 
-# ------------------------
-# CSV 업로드
-# ------------------------
 uploaded_file = st.file_uploader(
-    "📂 서울시 공영주차장 안내 정보.csv 업로드",
+    "서울시 공영주차장 안내 정보.csv 업로드",
     type="csv"
 )
 
 if uploaded_file is not None:
 
-    # CP949 인코딩
     df = pd.read_csv(uploaded_file, encoding="cp949")
 
-    st.success(f"총 {len(df)}개의 주차장 정보를 불러왔습니다.")
+    st.success(f"{len(df)}개의 주차장 정보를 불러왔습니다.")
 
-    # ------------------------
     # 검색
-    # ------------------------
-
-    keyword = st.text_input(
-        "🔍 주차장명 또는 주소 검색"
-    )
+    keyword = st.text_input("🔍 주차장명 또는 주소 검색")
 
     if keyword:
         result = df[
@@ -45,60 +32,43 @@ if uploaded_file is not None:
     else:
         result = df
 
-    st.write(f"검색 결과 : **{len(result)}개**")
+    st.write(f"검색 결과 : {len(result)}개")
 
-    # ------------------------
-    # 카드 형태 출력
-    # ------------------------
-
+    # 카드 출력
     for _, row in result.iterrows():
 
         with st.expander(f"🅿️ {row['주차장명']}"):
 
-            left, right = st.columns(2)
+            c1, c2 = st.columns(2)
 
-            with left:
+            with c1:
+                st.subheader("📍 기본 정보")
+                st.write("**주소**", row["주소"])
+                st.write("**전화번호**", row["전화번호"])
+                st.write("**주차장 종류**", row["주차장 종류명"])
+                st.write("**총 주차면수**", f"{row['총 주차면']}면")
+                st.write("**무료/유료**", row["유무료구분명"])
+                st.write("**야간 무료개방**", row["야간무료개방여부명"])
 
-                st.markdown("### 📍 기본정보")
-
-                st.write("**주소**")
-                st.write(row["주소"])
-
-                st.write("**전화번호**")
-                st.write(row["전화번호"])
-
-                st.write("**주차장 종류**")
-                st.write(row["주차장 종류"])
-
-                st.write("**총 주차면수**")
-                st.write(f"{row['총 주차면']}면")
-
-            with right:
-
-                st.markdown("### 💰 요금정보")
-
-                st.write("**기본 주차 요금**")
-                st.write(row["기본 주차 요금"])
-
-                st.write("**추가 단위 요금**")
-                st.write(row["추가 단위 요금"])
-
-                st.write("**1일 최대 요금**")
-                st.write(row["일 최대 요금"])
-
-                st.write("**월 정기권 요금**")
-                st.write(row["월 정기권 요금"])
+            with c2:
+                st.subheader("💰 요금 정보")
+                st.write("**기본 요금**", row["기본 주차 요금"], "원")
+                st.write("**기본 시간**", row["기본 주차 시간(분 단위)"], "분")
+                st.write("**추가 요금**", row["추가 단위 요금"], "원")
+                st.write("**추가 시간**", row["추가 단위 시간(분 단위)"], "분")
+                st.write("**1일 최대 요금**", row["일 최대 요금"], "원")
+                st.write("**월 정기권 금액**", row["월 정기권 금액"], "원")
 
             st.divider()
 
-            st.markdown("### 🕒 운영시간")
+            st.subheader("🕒 운영시간")
 
             st.write(
                 f"평일 : {row['평일 운영 시작시각(HHMM)']} ~ {row['평일 운영 종료시각(HHMM)']}"
             )
 
             st.write(
-                f"토요일 : {row['토요일 운영 시작시각(HHMM)']} ~ {row['토요일 운영 종료시각(HHMM)']}"
+                f"주말 : {row['주말 운영 시작시각(HHMM)']} ~ {row['주말 운영 종료시각(HHMM)']}"
             )
 
             st.write(
@@ -107,14 +77,24 @@ if uploaded_file is not None:
 
     st.divider()
 
-    st.subheader("📋 전체 데이터")
+    st.subheader("📋 전체 목록")
 
     st.dataframe(
-        result,
+        result[
+            [
+                "주차장명",
+                "주소",
+                "전화번호",
+                "기본 주차 요금",
+                "일 최대 요금",
+                "총 주차면",
+            ]
+        ],
         use_container_width=True,
-        hide_index=True
+        hide_index=True,
     )
 
 else:
+    st.info("CSV 파일을 업로드하세요.")
 
     st.info("왼쪽에서 CSV 파일을 업로드해주세요.")
