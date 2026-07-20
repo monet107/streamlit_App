@@ -13,14 +13,26 @@ st.set_page_config(page_title="유튜브 댓글 분석기", layout="wide")
 st.title("📊 유튜브 댓글 분석기 (YouTube Comment Analyzer)")
 st.caption("유튜브 영상 링크를 입력하고 댓글 반응도와 워드클라우드를 확인해보세요!")
 
-
 # --- 1. 유튜브 API 설정 및 함수 정의 ---
-# 스트림릿 Secrets에서 안전하게 키를 불러옵니다.
+st.sidebar.header("⚙️ 설정")
+
+# 스트림릿 Secrets에서 키를 안전하게 자동 로드
 if "YOUTUBE_API_KEY" in st.secrets:
-    api_key = st.secrets["YOUTUBE_API_KEY"]
+    raw_api_key = st.secrets["YOUTUBE_API_KEY"]
 else:
-    st.error("❌ 스트림릿 Settings -> Secrets에 'YOUTUBE_API_KEY'를 설정해 주세요.")
+    st.sidebar.error("❌ 스트림릿 Secrets에 'YOUTUBE_API_KEY'를 설정해 주세요.")
     st.stop()
+
+# 입력된 값에서 순수한 API 키 문자열만 추출 (따옴표, 공백, 변수명 제거 안전장치)
+api_key = None
+if raw_api_key:
+    match = re.search(r'["\'](.*?)["\']', raw_api_key)
+    if match:
+        api_key = match.group(1).strip()
+    elif "=" in raw_api_key:
+        api_key = raw_api_key.split("=")[-1].replace('"', '').replace("'", "").strip()
+    else:
+        api_key = raw_api_key.strip()
 
 def extract_video_id(url):
     """유튜브 URL에서 Video ID를 추출하는 함수"""
@@ -30,14 +42,14 @@ def extract_video_id(url):
 
 def get_youtube_comments(video_id, max_count, api_key):
     """유튜브 댓글을 가져오는 함수"""
-    youtube = build('youtube', 'v3', developerKey=api_key)
-    comments = []
-    
     try:
+        youtube = build('youtube', 'v3', developerKey=api_key)
+        comments = []
+        
         request = youtube.commentThreads().list(
             part="snippet",
             videoId=video_id,
-            maxResults=min(max_count, 100), # 한 번 요청에 최대 100개
+            maxResults=min(max_count, 100), 
             textFormat="plainText"
         )
         
@@ -54,15 +66,21 @@ def get_youtube_comments(video_id, max_count, api_key):
                 if len(comments) >= max_count:
                     break
                     
-            # 다음 페이지가 있으면 계속 가져옴
             if 'nextPageToken' in response and len(comments) < max_count:
                 request = youtube.commentThreads().list_next(request, response)
             else:
                 break
                 
         return pd.DataFrame(comments)
+        
     except Exception as e:
-        st.error(f"데이터를 가져오는 중 오류가 발생했습니다: {e}")
+        if "commentsDisabled" in str(e):
+            st.error("🔒 입력하신 영상은 유튜브 내에서 댓글 기능이 비활성화(댓글 중지)된 상태입니다.")
+            st.info("💡 댓글이 활성화되어 있는 다른 일반 영상 링크로 다시 시도해 주세요.")
+        elif "API key not valid" in str(e):
+            st.error("❌ 입력한 YouTube API Key가 올바르지 않습니다. 구글 클라우드 콘솔에서 활성화된 키 값을 다시 확인해 주세요.")
+        else:
+            st.error(f"데이터를 가져오는 중 오류가 발생했습니다: {e}")
         return pd.DataFrame()
 
 # --- 2. UI 및 입력부 ---
@@ -75,7 +93,6 @@ if st.button("🚀 댓글 분석 시작") and api_key:
     if not video_id:
         st.error("올바른 유튜브 링크가 아닙니다. URL을 다시 확인해 주세요.")
     else:
-        # 영상 임베드 표시
         st.subheader("📺 대상 영상")
         st.video(video_url)
         
@@ -83,7 +100,7 @@ if st.button("🚀 댓글 분석 시작") and api_key:
             df = get_youtube_comments(video_id, max_comments, api_key)
             
         if df.empty:
-            st.warning("가져온 댓글이 없습니다. 영상 ID나 API 키를 다시 확인해 주세요.")
+            pass
         else:
             st.success(f"총 {len(df)}개의 댓글을 성공적으로 가져왔습니다!")
             
@@ -94,7 +111,7 @@ if st.button("🚀 댓글 분석 시작") and api_key:
             # --- 레이아웃 분할 ---
             col1, col2 = st.columns(2)
             
-            # 1. 시간대별 댓글 작성 추이 (Plotly 사용)
+            # 1. 시간대별 댓글 작성 추이
             with col1:
                 st.subheader("📈 시간대별 댓글 작성 추이")
                 time_counts = df.groupby('date_hour').size().reset_index(name='count')
@@ -116,7 +133,7 @@ if st.button("🚀 댓글 분석 시작") and api_key:
             
             st.divider()
             
-           # 3. 한글 워드클라우드 생성
+            # 3. 한글 워드클라우드 생성
             st.subheader("🔤 댓글 한글 키워드 워드클라우드")
             
             with st.spinner("한글 형태소를 분석하여 워드클라우드를 생성하고 있습니다..."):
@@ -140,13 +157,11 @@ if st.button("🚀 댓글 분석 시작") and api_key:
                 else:
                     word_counts = pd.Series(all_nouns).value_counts().to_dict()
                     
-                    # try-except 블록 구조를 명확히 맞춤
                     try:
                         font_path = '/usr/share/fonts/truetype/nanum/NanumGothic.ttf' 
                         wc = WordCloud(font_path=font_path, width=800, height=400, 
                                        background_color='white', max_words=100).generate_from_frequencies(word_counts)
                     except Exception as e:
-                        # 폰트 로드 실패 시 시스템 기본 폰트로 대체
                         wc = WordCloud(width=800, height=400, background_color='white', max_words=100).generate_from_frequencies(word_counts)
                     
                     fig_wc, ax = plt.subplots(figsize=(10, 5))
@@ -154,40 +169,6 @@ if st.button("🚀 댓글 분석 시작") and api_key:
                     ax.axis('off')
                     st.pyplot(fig_wc)
             
-            # 데이터 원본 확인용 테이블
             st.divider()
             st.subheader("📋 수집된 댓글 데이터 원본")
             st.dataframe(df[['author', 'published_at', 'like_count', 'text']], use_container_width=True)
-
-def get_youtube_comments(video_id, max_count, api_key):
-    youtube = build('youtube', 'v3', developerKey=api_key)
-    comments = []
-    
-    try:
-        request = youtube.commentThreads().list(
-            part="snippet",
-            videoId=video_id,
-            maxResults=min(max_count, 100),
-            textFormat="plainText"
-        )
-        
-        while request and len(comments) < max_count:
-            response = request.execute()
-            for item in response['items']:
-                comment_data = item['snippet']['topLevelComment']['snippet']
-                comments.append({
-                    'author': comment_data['authorDisplayName'],
-                    'text': comment_data['textDisplay'],
-                    'like_count': comment_data['likeCount'],
-                    'published_at': comment_data['publishedAt']
-                })
-                if len(comments) >= max_count:
-                    break
-                    
-            if 'nextPageToken' in response and len(comments) < max_count:
-                request = youtube.commentThreads().list_next(request, response)
-            else:
-                break
-                
-        return pd.DataFrame(comments)
-        
