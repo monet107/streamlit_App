@@ -199,10 +199,10 @@ def get_youtube_comments(video_id, max_count, api_key):
                 
         return pd.DataFrame(comments)
         
-    except Exception as e:
+except Exception as e:
         # 댓글 비활성화 에러 처리 추가
-        if "commentsDisabled" in str(e):
+      if "commentsDisabled" in str(e):
             st.warning("🔒 이 영상은 유튜브 내에서 댓글 기능이 비활성화되어 있어 분석할 수 없습니다.")
-        else:
+      else:
             st.error(f"데이터를 가져오는 중 오류가 발생했습니다: {e}")
-        return pd.DataFrame()
+      return pd.DataFrame()
