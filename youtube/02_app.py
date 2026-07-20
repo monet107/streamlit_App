@@ -1,8 +1,6 @@
 import streamlit as st
 import pandas as pd
 import re
-import os
-import urllib.request
 from googleapiclient.discovery import build
 from kiwipiepy import Kiwi
 from wordcloud import WordCloud
@@ -15,17 +13,8 @@ st.set_page_config(page_title="유튜브 댓글 분석기", layout="wide")
 st.title("📊 유튜브 댓글 분석기 (YouTube Comment Analyzer)")
 st.caption("유튜브 영상 링크를 입력하고 댓글 반응도와 워드클라우드를 확인해보세요!")
 
-# [귀찮음 해결] 실행 시 인터넷에서 한글 폰트를 자동으로 다운로드하는 함수
-@st.cache_data
-def download_font():
-    font_url = "https://github.com/naver/nanumfont/raw/master/expanded/NanumGothic.ttf"
-    font_path = "NanumGothic.ttf"
-    if not os.path.exists(font_path):
-        urllib.request.urlretrieve(font_url, font_path)
-    return font_path
-
-# 폰트 다운로드 실행
-font_path = download_font()
+# [핵심 변경] 구글 웹폰트 주소를 다이렉트로 지정 (귀찮은 다운로드/파일 업로드 완전 생략)
+FONT_URL = "https://fonts.gstatic.com/s/nanumgothic/v23/PN_oRfi-QtxNhXYeIWS833S44t9f.ttf"
 
 # --- 1. 유튜브 API 설정 및 함수 정의 ---
 st.sidebar.header("⚙️ 설정")
@@ -140,7 +129,7 @@ if st.button("🚀 댓글 분석 시작") and api_key:
             
             st.divider()
             
-            # 3. 한글 워드클라우드 생성 (자동 다운로드한 폰트 적용)
+            # 3. 한글 워드클라우드 생성
             st.subheader("🔤 댓글 한글 키워드 워드클라우드")
             
             with st.spinner("한글 형태소를 분석하여 워드클라우드를 생성하고 있습니다..."):
@@ -164,9 +153,12 @@ if st.button("🚀 댓글 분석 시작") and api_key:
                 else:
                     word_counts = pd.Series(all_nouns).value_counts().to_dict()
                     
-                    # 자동 다운로드된 폰트 경로 주입
-                    wc = WordCloud(font_path=font_path, width=800, height=400, 
-                                   background_color='white', max_words=100).generate_from_frequencies(word_counts)
+                    # 구글 웹폰트 주소를 직접 꽂아 한글 깨짐 및 다운로드 에러 방지
+                    try:
+                        wc = WordCloud(font_path=FONT_URL, width=800, height=400, 
+                                       background_color='white', max_words=100).generate_from_frequencies(word_counts)
+                    except Exception as e:
+                        wc = WordCloud(width=800, height=400, background_color='white', max_words=100).generate_from_frequencies(word_counts)
                     
                     fig_wc, ax = plt.subplots(figsize=(10, 5))
                     ax.imshow(wc, interpolation='bilinear')
