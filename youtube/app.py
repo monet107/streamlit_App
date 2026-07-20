@@ -116,25 +116,21 @@ if st.button("🚀 댓글 분석 시작") and api_key:
             
             st.divider()
             
-            # 3. 한글 워드클라우드 생성
+           # 3. 한글 워드클라우드 생성
             st.subheader("🔤 댓글 한글 키워드 워드클라우드")
             
             with st.spinner("한글 형태소를 분석하여 워드클라우드를 생성하고 있습니다..."):
-                # Kiwi 형태소 분석기 초기화
                 kiwi = Kiwi()
                 
-                # 명사 추출 함수 (2글자 이상)
                 def extract_nouns(text):
                     if not text:
                         return []
-                    # 영문, 특수문자 제거 후 한글 위주 추출
                     nouns = []
                     for token in kiwi.tokenize(str(text)):
-                        if token.tag.startswith('N') and len(token.form) > 1: # 명사 계열이면서 2글자 이상
+                        if token.tag.startswith('N') and len(token.form) > 1:
                             nouns.append(token.form)
                     return nouns
 
-                # 전체 댓글에서 명사 추출
                 all_nouns = []
                 for txt in df['text']:
                     all_nouns.extend(extract_nouns(txt))
@@ -142,21 +138,17 @@ if st.button("🚀 댓글 분석 시작") and api_key:
                 if not all_nouns:
                     st.warning("워드클라우드를 생성할 만큼 충분한 한글 명사 단어가 없습니다.")
                 else:
-                    # 단어 빈도수 사전 생성
                     word_counts = pd.Series(all_nouns).value_counts().to_dict()
                     
-                    # 워드클라우드 생성 (스트림릿 클라우드는 기본 나눔 폰트가 없을 수 있으므로 시스템 기본 폰트 경로 지정 필요)
-                    # 리눅스 환경(Streamlit Cloud)에서는 보통 DroidSansFallback 등이 잡히나, 폰트 미지정 시 깨짐 방지를 위해 처리
+                    # try-except 블록 구조를 명확히 맞춤
                     try:
-                        # 리눅스 우분투 기본 폰트 경로 예시
                         font_path = '/usr/share/fonts/truetype/nanum/NanumGothic.ttf' 
                         wc = WordCloud(font_path=font_path, width=800, height=400, 
                                        background_color='white', max_words=100).generate_from_frequencies(word_counts)
-                    except:
-                        # 폰트 로드 실패 시 기본 폰트로 시도 (한글이 깨질 수 있어 알림 띄움)
+                    except Exception as e:
+                        # 폰트 로드 실패 시 시스템 기본 폰트로 대체
                         wc = WordCloud(width=800, height=400, background_color='white', max_words=100).generate_from_frequencies(word_counts)
                     
-                    # 시각화 출력
                     fig_wc, ax = plt.subplots(figsize=(10, 5))
                     ax.imshow(wc, interpolation='bilinear')
                     ax.axis('off')
