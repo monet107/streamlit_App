@@ -166,3 +166,43 @@ if st.button("🚀 댓글 분석 시작") and api_key:
             st.divider()
             st.subheader("📋 수집된 댓글 데이터 원본")
             st.dataframe(df[['author', 'published_at', 'like_count', 'text']], use_container_width=True)
+
+def get_youtube_comments(video_id, max_count, api_key):
+    youtube = build('youtube', 'v3', developerKey=api_key)
+    comments = []
+    
+    try:
+        request = youtube.commentThreads().list(
+            part="snippet",
+            videoId=video_id,
+            maxResults=min(max_count, 100),
+            textFormat="plainText"
+        )
+        
+        while request and len(comments) < max_count:
+            response = request.execute()
+            for item in response['items']:
+                comment_data = item['snippet']['topLevelComment']['snippet']
+                comments.append({
+                    'author': comment_data['authorDisplayName'],
+                    'text': comment_data['textDisplay'],
+                    'like_count': comment_data['likeCount'],
+                    'published_at': comment_data['publishedAt']
+                })
+                if len(comments) >= max_count:
+                    break
+                    
+            if 'nextPageToken' in response and len(comments) < max_count:
+                request = youtube.commentThreads().list_next(request, response)
+            else:
+                break
+                
+        return pd.DataFrame(comments)
+        
+    except Exception as e:
+        # 댓글 비활성화 에러 처리 추가
+        if "commentsDisabled" in str(e):
+            st.warning("🔒 이 영상은 유튜브 내에서 댓글 기능이 비활성화되어 있어 분석할 수 없습니다.")
+        else:
+            st.error(f"데이터를 가져오는 중 오류가 발생했습니다: {e}")
+        return pd.DataFrame()
