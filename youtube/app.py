@@ -13,13 +13,14 @@ st.set_page_config(page_title="유튜브 댓글 분석기", layout="wide")
 st.title("📊 유튜브 댓글 분석기 (YouTube Comment Analyzer)")
 st.caption("유튜브 영상 링크를 입력하고 댓글 반응도와 워드클라우드를 확인해보세요!")
 
-# --- 1. 유튜브 API 설정 및 함수 정의 ---
-# 스트림릿 Secrets에서 API 키를 가져오거나 사이드바에서 입력받도록 설정
-st.sidebar.header("⚙️ 설정")
-api_key = st.sidebar.text_input("YouTube API Key를 입력하세요", type="password")
 
-if not api_key:
-    st.info("💡 앱을 사용하려면 왼쪽 사이드바에 YouTube API Key를 입력해야 합니다. (또는 .streamlit/secrets.toml 설정)")
+# --- 1. 유튜브 API 설정 및 함수 정의 ---
+# 스트림릿 Secrets에서 안전하게 키를 불러옵니다.
+if "YOUTUBE_API_KEY" in st.secrets:
+    api_key = st.secrets["YOUTUBE_API_KEY"]
+else:
+    st.error("❌ 스트림릿 Settings -> Secrets에 'YOUTUBE_API_KEY'를 설정해 주세요.")
+    st.stop()
 
 def extract_video_id(url):
     """유튜브 URL에서 Video ID를 추출하는 함수"""
