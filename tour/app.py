@@ -1,8 +1,21 @@
 import random
 from datetime import datetime
+import io
 import pandas as pd
 import requests
 import streamlit as st
+
+# 파이썬 버전에 따른 TOML 라이브러리 임포트 처리
+try:
+  import tomllib  # Python 3.11+
+except ImportError:
+  try:
+    import tomli as tomllib  # Fallback for older python
+  except ImportError:
+    try:
+      import toml as tomllib  # Fallback
+    except ImportError:
+      tomllib = None
 
 # --- 페이지 설정 ---
 st.set_page_config(
@@ -11,18 +24,50 @@ st.set_page_config(
     layout="wide",
 )
 
+# --- GitHub Secrets.toml에서 API Key 불러오기 ---
+GITHUB_SECRETS_RAW_URL = "https://raw.githubusercontent.com/monet107/streamlit_App/main/tour/.streamlit/secrets.toml"
+
+
+@st.cache_data(ttl=3600)
+def load_api_key_from_github(url):
+  """GitHub에 저장된 secrets.toml 파일을 원본(raw)으로 불러와 파싱합니다."""
+  try:
+    response = requests.get(url, timeout=10)
+    if response.status_code == 200:
+      if tomllib:
+        # TOML 파싱
+        if hasattr(tomllib, "loads"):
+          secrets_data = tomllib.loads(response.text)
+        else:
+          secrets_data = tomllib.load(io.BytesIO(response.content))
+        return secrets_data.get("TOUR_API_KEY", "")
+      else:
+        # 라이브러리가 없을 경우 간단한 텍스트 파싱
+        for line in response.text.splitlines():
+          if "TOUR_API_KEY" in line:
+            return line.split("=")[1].strip().strip('"').strip("'")
+    return ""
+  except Exception:
+    return ""
+
+
+# GitHub에서 인증키 자동 로드 시도
+github_default_key = load_api_key_from_github(GITHUB_SECRETS_RAW_URL)
+
 # --- 사이드바: API 설정 ---
 st.sidebar.header("⚙️ API 설정")
-default_key = (
-    st.secrets.get("TOUR_API_KEY", "") if "TOUR_API_KEY" in st.secrets else ""
+# 스트림릿 시크릿에 있거나 GitHub에서 불러온 키를 기본값으로 지정
+stored_key = (
+    st.secrets.get("TOUR_API_KEY", "")
+    if "TOUR_API_KEY" in st.secrets
+    else github_default_key
 )
 API_KEY = st.sidebar.text_input(
-    "Tour API 인증키 (Decoding)", value=default_key, type="password"
+    "Tour API 인증키 (Decoding)", value=stored_key, type="password"
 )
 
 # 한국관광공사 국문 관광정보 서비스 API 엔드포인트 (KorService1)
 BASE_URL = "https://apis.data.go.kr/B551011/KorService1/searchFestival1"
-
 
 # --- 임시 샘플 데이터 (API 서버 장애 시 앱 테스트용) ---
 SAMPLE_FESTIVALS = [
@@ -68,7 +113,6 @@ def get_festivals(api_key, start_date):
   }
 
   try:
-    # 타임아웃을 15초로 넉넉하게 설정
     response = requests.get(BASE_URL, params=params, timeout=15)
 
     if response.status_code != 200:
@@ -112,7 +156,8 @@ st.markdown(
 
 if not API_KEY:
   st.warning(
-      "⚠️ 사이드바에 한국관광공사 API 인증키(Decoding Key)를 입력해주세요!"
+      "⚠️ API 인증키가 감지되지 않았습니다. 사이드바에 키를 직접 입력해"
+      " 주세요."
   )
 else:
   today_str = datetime.today().strftime("%Y%m%d")
@@ -123,7 +168,6 @@ else:
   if not festival_list:
     festival_list = SAMPLE_FESTIVALS
 
-  # 데이터프레임으로 변환
   df = pd.DataFrame(festival_list)
 
   if "random_festival" not in st.session_state or st.button(
