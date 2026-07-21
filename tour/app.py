@@ -13,8 +13,6 @@ st.set_page_config(
 
 # --- 사이드바: API 설정 ---
 st.sidebar.header("⚙️ API 설정")
-# Streamlit Secrets나 직접 입력으로 API Key 관리 권장
-# secrets.toml을 사용할 경우 st.secrets["TOUR_API_KEY"] 사용 가능
 default_key = (
     st.secrets.get("TOUR_API_KEY", "") if "TOUR_API_KEY" in st.secrets else ""
 )
@@ -26,11 +24,8 @@ API_KEY = st.sidebar.text_input(
 BASE_URL = "https://apis.data.go.kr/B551011/KorService1/searchFestival1"
 
 
-# --- API 호출 함수 ---
+# --- API 호출 함수 (데코레이터 오류 해결 완료) ---
 @st.cache_data(ttl=3600)  # 1시간 동안 데이터 캐싱
-fn_get_festivals = lambda api_key, start_date: get_festivals(api_key, start_date)
-
-
 def get_festivals(api_key, start_date):
   """한국관광공사 API를 통해 특정 일자 전후의 행사/축제 정보를 가져옵니다."""
   params = {
@@ -89,7 +84,7 @@ else:
     # 데이터프레임으로 변환
     df = pd.DataFrame(festival_list)
 
-    # --- 세션 스테이트를 이용한 랜덤 축제 고정 (새로고침 시 계속 바뀌는 것 방지) ---
+    # --- 세션 스테이트를 이용한 랜덤 축제 고정 ---
     if "random_festival" not in st.session_state or st.button(
         "🎲 다른 랜덤 축제 뽑기"
     ):
@@ -104,7 +99,6 @@ else:
     col1, col2 = st.columns([1, 2])
 
     with col1:
-      # 대표 이미지 출력 (이미지가 없는 경우 대체 텍스트)
       first_image = current_pick.get("firstimage", "")
       if first_image:
         st.image(first_image, use_container_width=True)
@@ -119,7 +113,6 @@ else:
       )
       st.write(f"📍 **장소:** {current_pick.get('addr1', '상세 주소 없음')}")
 
-      # 상세 정보가 있는 경우 요약 표시
       tel = current_pick.get("tel", "문의처 정보 없음")
       st.write(f"📞 **문의처:** {tel}")
 
@@ -127,7 +120,6 @@ else:
     st.markdown("---")
     st.subheader("🔍 전체 축제 검색 및 리스트")
 
-    # 지역별 필터나 키워드 검색 추가 가능
     search_keyword = st.text_input(
         "축제 이름 검색", placeholder="예: 바다, 불꽃, 서울 등"
     )
@@ -141,14 +133,12 @@ else:
 
     st.write(f"총 **{len(filtered_df)}개**의 축제가 검색되었습니다.")
 
-    # 테이블 형태로 데이터 시각화 (필요한 컬럼만 추출)
     if not filtered_df.empty:
       display_df = filtered_df[
           ["title", "eventstartdate", "eventenddate", "addr1"]
       ].copy()
       display_df.columns = ["축제명", "시작일", "종료일", "주소"]
 
-      # 스트림릿 인터랙티브 데이터프레임
       st.dataframe(display_df, use_container_width=True)
     else:
       st.warning("검색 결과가 없습니다.")
