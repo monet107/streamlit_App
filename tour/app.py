@@ -38,8 +38,6 @@ AREA_CODES = {
     "제주": "39",
 }
 
-
-# DATA FETCHING FUNCTIONS
 @st.cache_data(ttl=3600)
 def fetch_festivals(event_start_date, area_code=""):
     """행사정보조회 API 호출"""
@@ -52,13 +50,21 @@ def fetch_festivals(event_start_date, area_code=""):
         "MobileApp": "FestivalApp",
         "_type": "json",
         "listYN": "Y",
-        "arrange": "A",  # 대표이미지 정렬
+        "arrange": "A",
         "eventStartDate": event_start_date,
         "areaCode": area_code,
     }
     try:
         res = requests.get(url, params=params, timeout=10)
-        data = res.json()
+        
+        # 응답이 JSON이 아닐 경우(에러 페이지 등)를 대비해 텍스트 확인
+        try:
+            data = res.json()
+        except Exception:
+            st.error(f"API 서버가 JSON이 아닌 응답을 보냈어 (상태 코드: {res.status_code})")
+            st.code(res.text[:500]) # 서버가 보낸 응답 앞부분 출력
+            return []
+
         items = (
             data.get("response", {})
             .get("body", {})
@@ -69,12 +75,9 @@ def fetch_festivals(event_start_date, area_code=""):
             items = [items]
         return items
     except Exception as e:
-        st.error(
-            f"데이터를 불러오는 중 오류가 발생했습니다: {e}"
-        )
+        st.error(f"네트워크 오류 발생: {e}")
         return []
-
-
+        
 @st.cache_data(ttl=3600)
 def fetch_nearby_places(map_x, map_y, radius=5000):
     """위치기반 관광정보 API 호출 (주변 5km 내 맛집/관광지)"""
